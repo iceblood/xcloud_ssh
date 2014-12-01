@@ -1,0 +1,7 @@
+Server=myaccount.ssh.com
+Port=22
+User=myaccount
+Pass=mypassword
+gfwlist=https://autoproxy-gfwlist.googlecode.com/svn/trunk/gfwlist.txt
+usegfwlist=1
+useadblock=0

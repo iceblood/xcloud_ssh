@@ -1,0 +1,22 @@
+﻿plugin_ID:578
+plugin_Name:SSH智能代理
+plugin_VersionName: 0.10.0.9
+plugin_VersionCode: 01000000
+plugin_RomVersionH: 9.9.9.9
+plugin_RomVersionL: 1.0.0.7
+plugin_MobVersionH: 9.9
+plugin_MobVersionL: 1.0
+plugin_XPKGVersion: 1.0
+plugin_IntallPath: /opt/app/sshtunnel/
+plugin_Source: 1
+plugin_Autorun: 0
+plugin_Space: 4815131
+plugin_MD5: b8905e273bc0f298efdfb15db18f96f9
+plugin_Info: SSHTunnel with ad block and gwlist support. Across the Great Wall we can reach every corner in the world.
+plugin_Author:  iceblood
+plugin_Officeapp: 0
+plugin_State: 2
+plugin_Largeicon:/opt/app/sshtunnel/icon/large.jpg
+plugin_Smallicon:/opt/app/sshtunnel/icon/small.png
+plugin_InstallDate:2011-09-08
+ 

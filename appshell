@@ -1,0 +1,290 @@
+#!/bin/sh
+set -x
+
+Parameter_num=$#
+Parameter_one=$1
+PathNow=`dirname $0`  #当前执行appshell的路径
+PathInstall="/opt/app"
+LastValue=
+IpkName="sshtunnel*.ipk"
+BinName="sshtunnel.sh"
+
+#1，判断参数是否合法
+FunParamLegal()
+{
+	if [ ${Parameter_num} -ne 1 ];then
+		echo "Fail:Parameter Err."
+		exit 1
+	fi
+}
+
+#查看连接状态
+
+CheckRunStatus()
+{
+	local L_ExitStatus=0
+	cd ${PathNow}/bin
+	local a=$([[ -z $(./lsof -i:8118) ]]&&echo ""||echo "8118.")
+	local b=$([[ -z $(./lsof -i:1880) ]]&&echo ""||echo "1880.")
+	local c=$([[ -z $(./lsof -i:1082) ]]&&echo ""||echo "1082.")
+	local d=$([[ -z $(./lsof -i:5353) ]]&&echo ""||echo "5353.")
+	local ports=$(echo $a$b$c$d)
+	
+	local L_NumProgress=""
+	L_NumProgress=`ps|grep "./sshtunnel.sh"| grep "/bin/sh"|awk -F " " '{print $1}''`
+	local L_ConnCheck=""
+	
+	local GFWdownload=""
+	GFWdownload=`ps|grep "gfwupdate.sh"| grep "/bin/sh"|awk -F " " '{print $1}''`
+  if [ ${GFWdownload} ]; then
+	 	L_ExitStatus=8  #正在下载gfwlist
+  else
+	source ${PathInstall}/sshtunnel/etc/config.txt
+	L_ConnCheck=`./sshpass  -p $Pass ./ssh -l$User $Server -p $Port -o StrictHostKeyChecking=no echo ok`
+	if [  ${L_ConnCheck} == "ok" ];then
+		  if [ ${L_NumProgress} ]; then
+	    		L_ExitStatus=0  #可连接，已启动
+		  else
+			if [  ${ports} != "" ];then
+				start-stop-daemon -K -n privoxy
+				start-stop-daemon -K -n chinadns
+				start-stop-daemon -K -n redsocks2
+  				start-stop-daemon -K -n sshtunnel.sh
+				start-stop-daemon -K -n sshpass
+				L_ExitStatus=$ports  #可连接，端口冲突
+			else
+				L_ExitStatus=1  #可连接，未启动
+			fi    
+		  fi
+	else
+		  if [ ${L_NumProgress} ]; then
+			start-stop-daemon -K -n privoxy
+			start-stop-daemon -K -n chinadns
+			start-stop-daemon -K -n redsocks2
+  			start-stop-daemon -K -n sshtunnel.sh
+			start-stop-daemon -K -n sshpass
+		    L_ExitStatus=2 #不可连，启动错误
+		  else
+		    L_ExitStatus=3 #不可连，未启动
+		  fi		 
+	fi	
+ fi
+  echo ${L_ExitStatus}
+  #exit ${L_ExitStatus}	
+	
+	
+}
+
+
+#安装函数
+Install()
+{
+	local L_ExitStatus=0
+
+	#进入当前 appshell 的目录
+	cd ${PathNow}
+	
+	#查看/opt/app 目录是否存在 ,如果不存在则创建这样一个目录
+	if [ ! -d "${PathInstall}" ];then
+		mkdir -p ${PathInstall}
+	fi
+	
+	#ipk 文件存在
+	if [ -f ${IpkName} ];then
+		tar xzvf ${IpkName} -C ${PathInstall}
+		LastValue=$?
+		if [ ${LastValue} -eq 0 ];then
+			iptables-save > ${PathInstall}/sshtunnel/etc/iptables.txt
+		 	ln -sf ${PathInstall}/sshtunnel/lib/libpcre.so.0.0.1 /usr/lib/libpcre.so.0
+			ln -sf ${PathInstall}/sshtunnel/lib/libpcreposix.so.0.0.0 /usr/lib/libpcreposix.so.0
+			#ln -sf ${PathInstall}/sshtunnel/lib/libcrypto.so.1.0.0 /usr/lib/libcrypto.so.1.0.0
+			#ln -sf ${PathInstall}/sshtunnel/lib/libz.so.1.2.7 /usr/lib/libz.so.1
+			#ln -sf ${PathInstall}/sshtunnel/lib/libssl.so.1.0.0 /usr/lib/libssl.so.1.0.0
+			ln -sf ${PathInstall}/sshtunnel/lib/libevent-2.0.so.5 /usr/lib/libevent-2.0.so.5
+			echo "Success."
+			L_ExitStatus=0
+		else
+			echo "Fail:Install Err."
+			L_ExitStatus=3
+		fi
+	else
+		echo "Fail:Install file is not exist."
+		L_ExitStatus=2
+	fi
+	cd -
+	exit ${L_ExitStatus}
+}
+
+#卸载函数
+unInstall()
+{
+	local L_ExitStatus=0
+	iptables-restore ${PathInstall}/sshtunnel/etc/iptables.txt
+	#杀掉线程
+	start-stop-daemon -K -n privoxy
+	start-stop-daemon -K -n chinadns
+	start-stop-daemon -K -n redsocks2
+  	start-stop-daemon -K -n sshtunnel.sh
+	start-stop-daemon -K -n sshpass	
+	
+	#进入当前 appshell 的目录
+	cd ${PathNow}
+	rm  -fr ../sshtunnel
+	cd -
+	#删除其他软连接
+	rm -f /usr/lib/libpcre.so.0
+	rm -f /usr/lib/libpcreposix.so.0
+	#rm -f /usr/lib/libcrypto.so.1.0.0
+	#rm -f /usr/lib/libz.so.1
+	#rm -f /usr/lib/libssl.so.1.0.0
+	rm -f /usr/lib/libevent-2.0.so.5
+
+	exit ${L_ExitStatus}
+}
+
+#启动函数
+Start()
+{
+	local L_ExitStatus=0
+	#进入当前 appshell 的目录
+	cd ${PathNow}/bin
+	
+	#查看bin文件是否存在
+	if [ -f ${BinName} ];then
+		chmod +x ${BinName}
+		source ${PathInstall}/sshtunnel/etc/config.txt
+		start-stop-daemon -S -b -x ./sshtunnel.sh -- $Server $Port $User $Pass
+		LastValue=$?
+		if [ ${LastValue} -eq 0 ];then
+			echo "Success."
+			local L_Num=`CheckRunStatus`
+			if [  ${L_Num} -eq 1 ];then
+				L_ExitStatus=0
+			else
+			 	L_ExitStatus=1		
+			fi     
+		else
+			echo "Fail:Start Err."
+			L_ExitStatus=4
+		fi
+		
+	else
+		echo "Fail:shell file is not exist."
+		L_ExitStatus=5
+	fi
+	
+	cd -	
+
+	exit ${L_ExitStatus}	
+}
+
+#停止函数
+Stop()
+{
+	local L_ExitStatus=0
+ 	#杀掉线程
+ 	#kill -9 $(ps |grep ./ssh|awk '{print $1}')
+	start-stop-daemon -K -n privoxy
+	start-stop-daemon -K -n chinadns
+	start-stop-daemon -K -n redsocks2
+  	start-stop-daemon -K -n sshtunnel.sh
+	start-stop-daemon -K -n sshpass
+	LastValue=$?
+	if [ ${LastValue} -eq 0 ];then  
+		echo "Success."
+		L_ExitStatus=0
+	else
+		echo "Fail:Stop Err."
+		L_ExitStatus=4
+	fi
+	iptables-restore ${PathInstall}/sshtunnel/etc/iptables.txt
+ 
+	exit ${L_ExitStatus}	
+}
+
+
+#重新启动函数
+Restart()
+{
+	local L_ExitStatus=0
+	local L_NumProgress=""
+	
+	#杀掉线程
+	start-stop-daemon -K -n privoxy
+	start-stop-daemon -K -n chinadns
+	start-stop-daemon -K -n redsocks2
+  start-stop-daemon -K -n sshtunnel.sh
+	start-stop-daemon -K -n sshpass	
+	
+	#进入当前 appshell 的目录
+	cd ${PathNow}/bin
+	
+	#文件是否存在
+	if [ -f ${BinName} ];then
+		chmod +x ${BinName}
+		source ${PathInstall}/sshtunnel/etc/config.txt
+		start-stop-daemon -S -b -x ./sshtunnel.sh -- $Server $Port $User $Pass
+		LastValue=$?
+		if [ ${LastValue} -eq 0 ];then
+			echo "Success."
+			local L_Num=`CheckRunStatus`
+			if [  ${L_Num} -eq 1 ];then
+				L_ExitStatus=0
+			else
+			 	L_ExitStatus=1		
+			fi	
+			
+		else
+			echo "Fail:Start Err."
+			L_ExitStatus=4
+		fi
+		
+	else
+		echo "Fail: shell file is not exist."
+		L_ExitStatus=5
+	fi
+	
+	cd -	
+	exit ${L_ExitStatus}	
+}
+
+
+#主函数
+Main()
+{
+	#安装
+	if [ "${Parameter_one}" = "install" ];then
+		Install
+	
+	#卸载
+	elif [ "${Parameter_one}" = "uninstall" ];then
+		unInstall
+	
+	#启动
+	elif [ "${Parameter_one}" = "start" ];then
+		Start
+	
+	#停止
+	elif [ "${Parameter_one}" = "stop" ];then
+		Stop	
+	
+	#重启
+	elif [ "${Parameter_one}" = "restart" ];then
+		Restart
+		
+	#查看运行状态
+	elif [ "${Parameter_one}" = "runstatus" ];then
+		CheckRunStatus
+		
+	#输入参数错误
+	else
+		echo "ERR:Parameter Err."
+		exit 1	
+	fi
+}
+
+#检查参数是否合法
+FunParamLegal
+
+#执行主函数
+Main

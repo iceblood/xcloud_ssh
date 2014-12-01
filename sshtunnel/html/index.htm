@@ -1,0 +1,363 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ssh代理</title>
+<script type='text/javascript' src='jqscripts'></script>
+<script type='text/javascript' src='jsscripts'></script>
+<style type='text/css'>
+* {
+	margin: 0 0;
+	padding: 0 0;
+	font-size: 14px;
+	font-family: '微软雅黑';
+}
+a {
+	text-decoration: none;
+}
+body {
+	background: #ededed;
+}
+.label {
+	width: 40%;
+	text-align: right;
+}
+table tr td {
+	padding: 10px 15px 10px 0;
+}
+.nav {
+	height: 63px;
+	background: url('comimg?path=title_box.jpg') repeat-x center;
+}
+.common {
+	width: 940px;
+	margin: 0 auto;
+}
+.nav .nav_head .logo {
+	display: block;
+	float: left;
+	margin-top: 15px;
+	width: 105px;
+	height: 30px;
+	background: url('comimg?path=logo.png') no-repeat center;
+}
+.navigation {
+	width: 940px;
+	height: 54px;
+	margin: 54px auto;
+	background: url('comimg?path=fast_box.png') no-repeat center;
+}
+.navigation .navigation_title {
+	color: #666;
+	padding-top: 15px;
+	padding-left: 17px;
+}
+.navigation .navigation_title a {
+	color: #666;
+}
+.manage_content {
+	width: 940px;
+	height: auto;
+	background: white;
+	border: 1px solid #CCC;
+	margin: 0 auto;
+}
+.manage_input {
+	width: 260px;
+}
+.manage_btn {
+	display: block;
+	width: 66px;
+	height: 26px;
+	background: url('comimg?path=button1.png');
+	text-align: center;
+}
+.manage_btn:hover {
+	background: url('comimg?path=click_button1.png');
+}
+.manage_btn b {
+	display: block;
+	color: white;
+	padding-top: 4px;
+	font-size: 13px;
+}
+.app_btn {
+	display: block;
+	width: 66px;
+	height: 26px;
+	background: url('comimg?path=thunder_button1.png');
+	text-align: center;
+}
+.app_btn:hover {
+	background: url('comimg?path=thunder_button1_click.png');
+}
+.app_btn b {
+	display: block;
+	font-weight: 300;
+	font-size: 14px;
+	color: white;
+	padding-top: 2px;
+}
+</style>
+</head>
+<body>
+<div class='nav'>
+  <div class='nav_head common'> <a href='http://r.xcloud.cc' target='_blank' class='logo'></a> <span class='version'></span> <a href='javascript:void(0)' id='getupdate' class='getupdate'><span class='getupdate_def'></span></a> <span class='updatewords'></span> </div>
+</div>
+<div class="navigation">
+  <div class="navigation_title"> <a href="comreturn">主页</a> >> SSH智能代理</div>
+</div>
+<div class="manage_content">
+  <table style="width:100%;border-collapse: collapse;">
+    <tr>
+      <td width="7%" class="label"><label>服务器域名/IP：</label></td>
+      <td width="93%"><input type='text' id='GatewayName' class='GatewayName manage_input' value='mysshserver.example.com'></td>
+    </tr>
+    <tr>
+      <td width="7%" class="label"><label>SSH服务端口：</label></td>
+      <td width="93%"><input type='text' id='GatewayPort' class='GatewayPort manage_input' value='22'></td>
+    </tr>
+    <tr>
+      <td class="label"><label>用户名：</label></td>
+      <td><input type='text' id='Username' class='Username manage_input' value='guest'></td>
+    </tr>
+    <tr>
+      <td class="label">密码：</td>
+      <td><input type='text' id='Passd' class='Passd manage_input' value='12345'></td>
+    </tr>
+    <tr>
+      <td class="label">自定义强制代理列表</td>
+      <td><textarea rows="5"  id="listurls" style=" overflow:auto;width:260px;" >www.ip.cn</textarea></td>
+    </tr>
+    <tr>
+      <td align="right"><p>智能代理应用系统规则</p>
+      <p>(注意：影响性能)</p></td>
+      <td align="left">
+        <p>
+          <input type="checkbox" id="usegfwlist">
+          <label>开启gfwlist智能代理规则</label>
+        </p>
+      <p><input type="checkbox" id="useadblock">
+          <label>开启adblock广告过滤规则</label> </p></td>
+    </tr>
+    <tr>
+      <td align="right"><p>
+          <input type="checkbox"   id="dlgfwlist" onclick="gable(this)" >
+          保存设置时更新gfwlist</p>
+        <p>(耗时长，不建议频繁更新)</p></td>
+      <td align="left"><input type='text' id='gfwlist' style='width:430px;' value='https://autoproxy-gfwlist.googlecode.com/svn/trunk/gfwlist.txt' disabled></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><div class="runstatus"><img src="/luci-static/resources/icons/loading.gif">正在初始化，等待时间受网络连接影响可能较长. 如等待时间过长请手工检查账号状态后重新打开该页面</div></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><div style="margin-left:300px"> <a href='javascript:;' class='manage_btn start_thread' style="visibility:hidden; float:left"><b>启动插件</b></a> <a class='l_btn manage_btn' style="visibility:hidden;float:left" > </a> <a href='javascript:void(0)' rel='save' class='l_btn manage_btn' style="float:left" ><b>保存并应用</b></a> <a class='l_btn manage_btn' style="visibility:hidden;float:left" > </a> <a href='javascript:void(0)' class='manage_btn stop_thread' style="visibility:hidden;float:left"><b>停止插件</b></a> </div></td>
+    </tr>
+  </table>
+  <input style="margin-left:50px;" type="checkbox" name="advcheck" id="advcheck" onclick="chedb(this)" >
+  高级选项 
+  <script>
+ 
+ function chedb(obj){
+  if(obj.checked==true){
+ document.getElementById("advsets").style.display="block";
+ }else{
+ document.getElementById("advsets").style.display="none";
+ }
+ }
+  function gable(obj){
+ 
+ if(obj.checked==true){
+ document.getElementById("gfwlist").disabled=false;
+ }else{
+ document.getElementById("gfwlist").disabled=true;
+ }
+ }
+ </script>
+  <div id="advsets" style="margin-left:150px;display: none"> <br>
+    <p>
+      <input type="checkbox" id="x" onclick="" disabled>
+      自动更新页面内容过滤规则(正在测试，暂不可用)</p>
+    <p>
+      <input type="checkbox" id="x" onclick="" disabled>
+      自动更新广告过滤规则(正在测试，暂不可用)</p>
+    <p>
+      <input type="checkbox" id="x" onclick="" disabled>
+      开机自启动(正在测试，暂不可用)</p>
+  </div>
+</div>
+</body>
+<script type='text/javascript'>
+        var tmp = null
+        var tmp1 = null
+
+        $(document).ready(function () {
+                        
+         $.ajax({
+                    url: 'comcmd',
+                    data: { cmd: '/opt/app/sshtunnel/bin/config.sh'},
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (r) {
+                        tmp = r.resdata;
+                        tmp1 = tmp.split("\n");
+                      $("#GatewayName").val(tmp1[0]);
+                      $("#GatewayPort").val(tmp1[1]);		              
+                      $("#Username").val(tmp1[2]);
+                      $("#Passd").val(tmp1[3]);
+                      $("#gfwlist").val(tmp1[4]);
+					  
+					  if(tmp1[5]=="1"){
+			$('#usegfwlist').attr("checked",true);
+		}			if(tmp1[6]=="1"){
+			$('#useadblock').attr("checked",true);
+		}
+                      
+                    }
+                });
+				
+	 $.ajax({
+                    url: 'comcmd',
+		  //sed '2,$d'
+                    data: { cmd: "sed '1d;$d' /opt/app/sshtunnel/etc/config/temp.action"},
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (r) { 
+                        tmp = r.resdata;
+		      $("#listurls").val(tmp);             
+                    }
+                  });
+                
+                
+    }); 
+
+        // get status
+        $.ajax({
+            url:'comcmd',
+            data:{cmd:'/opt/app/sshtunnel/appshell runstatus'},
+            dataType:'json',
+            type:'post',
+            success:function(r){
+                //$(".runstatus").hide();
+                tmp = r.resdata;
+                //alert(tmp);	
+                if(tmp == 0){
+                    $('.runstatus').text('连接正常，服务已启动');
+                    $('.start_thread').css({"visibility":"hidden"});
+                    $('.stop_thread').css({"visibility":"visible"});
+                }
+                else if(tmp == 1){
+                    $('.runstatus').text('账号连接正常，服务未启动');
+                    $('.start_thread').css({"visibility":"visible"});
+                    $('.stop_thread').css({"visibility":"hidden"});
+                }	
+                else if(tmp == 2){
+                    $('.runstatus').text('账号连接错误，请停止服务检查网络并修改账号后重新启动！');
+                    $('.start_thread').css({"visibility":"hidden"});
+                    $('.stop_thread').css({"visibility":"visible"});
+                }				
+                else if(tmp == 3){
+                    $('.runstatus').text('账号连接错误，请检查网络并修改账号后启动服务');
+                    $('.start_thread').css({"visibility":"hidden"});
+                    $('.stop_thread').css({"visibility":"hidden"});
+                }
+                else if(tmp == 8){
+                    $('.runstatus').html('<img src="/luci-static/resources/icons/loading.gif">仍在下载gfwlist，该过程可能需要5分钟以上，请稍后重新打开本页面');
+                    $('.l_btn').css({"visibility":"hidden"});
+                    $('.start_thread').css({"visibility":"hidden"});
+                    $('.stop_thread').css({"visibility":"hidden"});
+                }
+                else{
+                    $('.runstatus').text('端口'+ tmp +'冲突，请检查并关闭相关程序后再启动本服务');
+                    $('.start_thread').css({"visibility":"hidden"});
+                    $('.stop_thread').css({"visibility":"hidden"});
+                }
+            }
+    
+        })
+        
+        //save config
+            $('.l_btn').live('click',function(){
+                var dwlist= ($('#gfwlist').val());
+            if($('#dlgfwlist').attr("checked")=="checked"){
+                $('.runstatus').html('<img src="/luci-static/resources/icons/loading.gif">正在下载并更新gfwlist规则，请稍候'); 
+                
+            $.ajax({
+                url:'comcmd',
+                data:{cmd:'/opt/app/sshtunnel/bin/gfwupdate.sh ' +dwlist },
+                dataType:'json',
+                type:'post',
+                success:function(r){
+                    
+                    $('.runstatus').text('下载成功');
+                }
+            })	
+                }
+	         templist=$("#listurls").val().replace(/\n/g,"\\\\n"); 
+				//alert(templist);
+         $.ajax({
+		            url: 'comcmd',
+		            data: { cmd: '/opt/app/sshtunnel/bin/tempurls.sh '+templist },
+
+		            dataType: 'json',
+		            type: 'post',
+		            success: function (r) {
+		                 }
+		        });
+		var usegfwlist=0;
+		var useadblock=0;	 
+		if($('#usegfwlist').attr("checked")=="checked"){
+			usegfwlist=1;
+		}
+		if($('#useadblock').attr("checked")=="checked"){
+			useadblock=1;
+		}
+		  $.ajax({
+                url:'comcmd',
+                data:{cmd:'/opt/app/sshtunnel/bin/config.sh '+ $('.GatewayName').val()+' '+ $('.GatewayPort').val()+' '+$('.Username').val()+' '+$('.Passd').val()+ ' ' +dwlist+ ' ' +usegfwlist+ ' ' +useadblock },
+                dataType:'json',
+                type:'post',
+                success:function(r){
+                    
+                    $('.runstatus').text('保存设置成功，如果有规则更改需要重新启动服务。');
+                    window.location.reload();
+                }
+            })		
+        })
+
+        // start thread
+        $('.start_thread').live('click',function(){
+            $('.start_thread').css({"visibility":"hidden"});
+            $('.runstatus').html('<img src="/luci-static/resources/icons/loading.gif">正在启动服务，请稍候');	
+            $.ajax({
+                url:'comcmd',
+                data:{cmd:'/opt/app/sshtunnel/appshell start'},
+                dataType:'json',
+                type:'post',
+                success:function(r){
+                    tmp = r.result;
+                    //alert(tmp);
+                     window.location.reload();
+
+                }
+            })		
+        })
+
+        $('.stop_thread').live('click',function(){
+           $('.stop_thread').css({"visibility":"hidden"});
+           $('.runstatus').html('<img src="/luci-static/resources/icons/loading.gif">正在停止服务，如稍后无法显示本页，刷新即可');
+            $.ajax({
+                url:'comcmd',
+                data:{cmd:  '/opt/app/sshtunnel/appshell stop'},
+                dataType:'json',
+                type:'post',
+                success:function(r){
+		$('.runstatus').text('服务已停止');
+		//window.location.reload();
+                }
+            })
+          $('.runstatus').delay(5000).hide(); 
+	 window.location.reload();			
+        })		
+    </script>
+</html>

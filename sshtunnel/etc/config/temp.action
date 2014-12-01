@@ -1,0 +1,5 @@
+{+forward-override{forward-socks5 192.168.99.1:1880 .}}
+www.ip.cn
+.*.google.com
+www.ip138.com
+
